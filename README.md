@@ -39,6 +39,7 @@ The system combines:
 
 > **Important:** MediVault is a hackathon/demo prototype and is not a certified medical device. It must not be used to diagnose, treat, or make real-world clinical decisions. Predictions and alerts require rigorous clinical validation before any production or patient-facing use.
 
+Very helpful when dealing with multiple ICU patients with deterioration
 ---
 
 ## Features
