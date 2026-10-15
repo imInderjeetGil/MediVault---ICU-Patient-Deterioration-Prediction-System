@@ -3,9 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   getPatient,
   getPatientVitals,
+  getPatientLabs,
   subscribeToPatientVitals,
   subscribeToPatientRisk,
 } from "../api/api";
+
 import PatientHeader from "../components/patient/PatientHeader";
 
 function Patient() {
@@ -16,6 +18,10 @@ function Patient() {
   const [vitals, setVitals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [labs, setLabs] = useState([]);
+  const [labsLoading, setLabsLoading] = useState(false);
+  const [labsError, setLabsError] = useState("");
+  const [showLabs, setShowLabs] = useState(false);
 
   useEffect(() => {
     async function loadPatient() {
@@ -76,6 +82,37 @@ function Patient() {
       socket.close();
     };
   }, [id]);
+
+  useEffect(() => {
+  let cancelled = false;
+
+  async function loadLabs() {
+    setLabsLoading(true);
+    setLabsError("");
+
+    try {
+      const data = await getPatientLabs(id);
+
+      if (!cancelled) {
+        setLabs(data);
+      }
+    } catch (err) {
+      if (!cancelled) {
+        setLabsError(err.message || "Failed to load laboratory results.");
+      }
+    } finally {
+      if (!cancelled) {
+        setLabsLoading(false);
+      }
+    }
+  }
+
+  if (id) loadLabs();
+
+  return () => {
+    cancelled = true;
+  };
+}, [id]);
   
 const latestVitals = useMemo(() => {
     if (!vitals.length) return null;
@@ -129,12 +166,6 @@ const latestVitals = useMemo(() => {
                 ICU Early Detection
               </p>
             </div>
-          </div>
-
-          <div className="hidden items-center gap-6 text-sm text-slate-400 md:flex">
-            <button className="text-blue-400">Patients</button>
-            <button>Alerts</button>
-            <button>Analytics</button>
           </div>
 
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-600/20 text-xs font-semibold text-blue-400">
@@ -365,19 +396,22 @@ const latestVitals = useMemo(() => {
 
               <div className="mt-4 space-y-2">
                 <ClinicalLink
-                  title="Laboratory Results"
-                  subtitle="View patient labs"
-                />
+  title="Laboratory Results"
+  subtitle="View patient labs"
+  onClick={() => navigate(`/patients/${id}/labs`)}
+/>
 
                 <ClinicalLink
-                  title="Medications"
-                  subtitle="Current medications"
-                />
+  title="Medications"
+  subtitle="View patient medications"
+  onClick={() => navigate(`/patients/${id}/medications`)}
+/>
 
                 <ClinicalLink
-                  title="Observations"
-                  subtitle="Clinical notes"
-                />
+  title="Observations"
+  subtitle="View clinical notes"
+  onClick={() => navigate(`/patients/${id}/observations`)}
+/>
               </div>
             </section>
 
@@ -509,25 +543,24 @@ function DetailRow({ label, value }) {
   );
 }
 
-function ClinicalLink({ title, subtitle }) {
+
+function ClinicalLink({ title, subtitle, onClick }) {
   return (
-    <button className="group flex w-full items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/40 px-4 py-3 text-left transition hover:border-slate-700 hover:bg-slate-900">
+    <button
+      onClick={onClick}
+      className="group flex w-full items-center justify-between rounded-xl border border-slate-800/80 bg-slate-950/40 px-4 py-3 text-left transition hover:border-slate-700 hover:bg-slate-900"
+    >
       <div>
-        <p className="text-sm text-slate-300">
-          {title}
-        </p>
-
-        <p className="mt-1 text-xs text-slate-600">
-          {subtitle}
-        </p>
+        <p className="text-sm text-slate-300">{title}</p>
+        <p className="mt-1 text-xs text-slate-600">{subtitle}</p>
       </div>
-
       <span className="text-slate-600 transition group-hover:text-blue-400">
         →
       </span>
     </button>
   );
 }
+
 
 function getRiskFactors(vitals) {
   if (!vitals) return [];
